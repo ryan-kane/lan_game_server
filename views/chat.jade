@@ -1,0 +1,29 @@
+extends layout
+
+block content
+    script(src='/javascripts/chat.js')
+    h1 Chat
+    div(id="chatInfo")
+    div(class="container")
+        div(class="chatDisplay")
+            div(id="chatBoxDisplay", class="chatBox")
+            div(class="input-container")
+                input(type="text", id="chatInput", class="chatInput", disabled)
+                div(class="buttonDiv")
+                    button(id="sendButton", class="hidden") Send
+                    button(id="connectButton", class="show") Connect
+        div(class="login-window", id="loginWindow")
+            p Login
+            input(type="text", id="loginWindowInput")
+            select(id="loginWindowColourSelector")
+                option(value="", disabled, selected)
+                option(value="#FFFF0050") yellow
+                option(value="#0000FF50") blue
+                option(value="#FF000050") red
+                option(value="#00800050") green
+                option(value="#FFA50050") orange
+                option(value="#EE82EE50") purple
+                option(value="#EEEEEE") black
+                option(value="#A52A2A50") brown
+            button(id="loginWindowButton") Confirm
+    

@@ -1,0 +1,13 @@
+extends layout
+
+block content
+  script(src='/javascripts/index.js')
+
+  h1= title
+  p Welcome to #{title}
+  p Choose a game from the selection
+  ul
+  each game in games
+    li #[a(href=game.path) #{game.title}]
+  button(id="HelloButton") Hello
+  div(id="HelloPara")

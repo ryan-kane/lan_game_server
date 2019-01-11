@@ -1,0 +1,10 @@
+extends layout
+
+block content
+  script(src='/javascripts/users.js')
+
+  h1 Users
+  p List of Users
+  ul
+  each user in users
+    li= user.name

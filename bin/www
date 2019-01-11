@@ -1,0 +1,196 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+//var mongo_client = require('./dbClient');
+var games = require('../games').games;
+var debug = require('debug')('game:server');
+var http = require('http');
+var socket = require('socket.io');
+var crypto = require("crypto");
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '80');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+var io = socket(server);
+
+var msg_id = 0;
+
+io.sockets.on('connection', (socket)=>{
+  // object for keeping track of users (user == connection)
+  let socket_id;
+  connections = {count: 0};
+  socket.on('chat', (data)=>{
+    socket_id = socket.id;
+    /*
+    R_CODE API
+    0 normal message
+    1 create user
+    2 improper username
+    3 disconnect
+
+    CLIENT ACTIONS
+    0 message
+    1 login
+    */
+    switch(data.action){
+      case 0:
+        console.log(connections);
+        if(connections[socket_id]){
+          let clean_data = {};
+          clean_data.user = connections[socket_id].user;
+          clean_data.msg = data.msg;
+          clean_data.msg_id = msg_id++;
+          clean_data.colour = connections[socket_id].colour;
+          clean_data.r_code = 0; // normal message
+          io.emit('chat', clean_data);
+          console.log(clean_data);
+        }else{
+          console.log("Unknown Socket. Ignoring...")
+          console.log(data);
+        }
+        
+        break;
+      case 1: 
+        console.log("CONNECTION ATTEMPT: " + data.user_name);
+        let ne = true;
+        for(connection in connections){
+          console.log(connection)
+          console.log(connections[connection] + " " + data.user_name);
+          if(connections[connection].user == data.user_name || connections[connection].colour == data.color){
+            socket.emit('chat', {r_code: 1});
+            ne = false;
+          }
+        }
+        if(ne){
+          connections.count++;
+          connections[socket_id] = {user: data.user_name, colour: data.colour};
+          socket.emit('chat', {r_code: 2, user: data.user_name, colour: data.colour});
+          io.emit('chat', {user: connections[socket_id].user, msg: "connected", r_code: 0});
+        }
+        break;
+      default:
+        break;
+
+    }
+         
+    // let new_st = crypto.randomBytes(20).toString('hex');
+  });
+
+  socket.on('avalon', (data)=>{
+    switch(data.action){
+      case 0:
+        break;
+      case 1:
+        break;
+      case 2:
+        break;
+      default:
+        break;
+    }
+  });
+  
+  socket.on('disconnect', ()=>{
+    socket_id = socket.id;
+    if(connections[socket_id]){
+      console.log(connections[socket_id].user + ' DISCONNECTED');
+      let user = connections[socket_id].user
+      connections[socket_id] = {};
+      io.emit('chat', {user: user, r_code: 3})
+      
+    }
+  });
+    
+  
+});
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+var os = require('os');
+var ifaces = os.networkInterfaces();
+var wifis = ifaces['Wi-Fi'];
+for(let i = 0; i < wifis.length; i++){
+  if(wifis[i].family == "IPv4"){
+    ip = wifis[i].address;
+    break;
+  }
+}
+console.log(wifis);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
